@@ -1,0 +1,9 @@
+[package]
+name = "libseph"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+csv = "1.2.2"
+serde = { version = "1.0.171", features = ["derive"] }
+uuid = { version = "1.4.0", features = ["v4"] }

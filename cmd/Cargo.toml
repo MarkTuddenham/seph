@@ -1,0 +1,11 @@
+[package]
+name = "seph"
+version = "0.0.1"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.3.12", features = ["derive"] }
+nix = "0.26.2"
+sysinfo = "0.29.4"
+libseph = { path = "../lib" }
+anyhow = "1.0.71"
