@@ -22,12 +22,10 @@ fn main() -> anyhow::Result<()> {
 
             // TOOD?: Capture env
             send_msg(Message::Schedule(job));
-        } 
+        }
         Commands::Output(job_id) => {
             send_msg(Message::Output(job_id.id.into()));
-        }
-
-        // args::Commands::List => {
+        } // args::Commands::List => {
           //     println!("List");
           // }
           // args::Commands::Kill(kill) => {
@@ -48,11 +46,8 @@ fn send_msg(msg: Message) {
     stream.write_all(ser_job.as_bytes()).unwrap();
     stream.shutdown(std::net::Shutdown::Write).unwrap();
 
-    match msg {
-        Message::Output(_) => {
-            print_from_stream(&mut stream);
-        }
-        _ => {}
+    if msg.expects_reply() {
+        print_from_stream(&mut stream);
     }
 }
 

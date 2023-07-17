@@ -11,7 +11,9 @@ use std::thread::spawn;
 
 use directories::ProjectDirs;
 
-use libseph::{Job, Message, SOCKET_PATH, JobId};
+use libseph::{Job, JobId, Message, SOCKET_PATH};
+
+//TODO: save the jobs & ouputs in a mysql database
 
 struct Worker {
     process_mutex: Mutex<()>,
@@ -59,7 +61,7 @@ fn bind_socket() -> anyhow::Result<UnixListener> {
     Ok(listener)
 }
 
-fn handle_client(worker: Arc<Worker>, mut stream:UnixStream) {
+fn handle_client(worker: Arc<Worker>, mut stream: UnixStream) {
     tracing::debug!("Client connected");
     let msg = Message::from(&mut stream);
     tracing::info!("Received msg: {:?}", msg);
@@ -68,7 +70,6 @@ fn handle_client(worker: Arc<Worker>, mut stream:UnixStream) {
         Message::Schedule(job) => handle_schedule(worker, job),
         Message::Output(job_id) => handle_get_output(&mut stream, job_id),
     }
-
 }
 
 fn handle_schedule(worker: Arc<Worker>, job: Job) {
@@ -102,8 +103,6 @@ fn handle_get_output(stream: &mut UnixStream, job_id: JobId) {
     }
 }
 
-
-
 fn process_jobs(worker: Arc<Worker>) {
     tracing::debug!("Trying to get process lock");
     // If we can't get the lock, it means we're already processing a job
@@ -134,9 +133,8 @@ fn process_jobs(worker: Arc<Worker>) {
 }
 
 fn exec_job(job: Job) {
-    tracing::info!("Starting job: {:?}", job);
+    tracing::info!("Starting job: {job:?}");
     let mut command = Command::new("sh");
-
 
     command
         .arg("-c")
@@ -145,14 +143,27 @@ fn exec_job(job: Job) {
         .stdout(get_stdio(&job))
         .stderr(get_stdio(&job));
 
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.uid(job.uid).gid(job.uid);
+        tracing::trace!("Running as uid: {}", job.uid);
+    }
+
+    #[cfg(windows)]
+    not_supported!("Windows is not supported yet");
+    // command
+    //     .creation_flags(0x00000200)
+    //     .creation_flags(0x00000400);
+
     if let Some(ref dir) = job.dir {
+        tracing::trace!("Running in dir: {dir:?}");
         command.current_dir(dir);
     }
 
     let status = command.status().unwrap();
     tracing::info!("Finished job: {}; {:?}", status, job);
 }
-
 
 fn get_stdio(job: &Job) -> Stdio {
     if let Some(path) = get_cache_dir() {

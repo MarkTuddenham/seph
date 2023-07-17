@@ -24,6 +24,7 @@ pub struct Job {
     pub id: JobId,
     pub command: String,
     pub dir: Option<PathBuf>,
+    pub uid: u32,
 }
 
 impl Job {
@@ -31,6 +32,7 @@ impl Job {
         Job {
             id: JobId(format!("{:x}", Uuid::new_v4().as_fields().0)),
             dir: None,
+            uid: nix::unistd::Uid::current().as_raw(),
             command,
         }
     }

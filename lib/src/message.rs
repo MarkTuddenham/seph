@@ -6,6 +6,7 @@ use crate::job::{Job, JobId};
 #[serde(tag = "type", content = "data")]
 pub enum Message {
     // When adding a new variant don't forget to add it to the From<&UnixStream> impl
+    // and to the expects_reply method
     Schedule(Job),
     // List,
     // Status(JobId),
@@ -13,18 +14,12 @@ pub enum Message {
     Output(JobId),
 }
 
-impl From<Message> for String {
-    fn from(msg: Message) -> Self {
-        let mut buf = vec![];
-        {
-            let mut writer_builder = csv::WriterBuilder::new();
-            writer_builder.has_headers(false);
-            let mut writer = writer_builder.from_writer(&mut buf);
-            writer.serialize(&msg).unwrap();
+impl Message {
+    pub fn expects_reply(&self) -> bool {
+        match self {
+            Message::Schedule(_) => false,
+            Message::Output(_) => true,
         }
-
-        let s = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
-        s
     }
 }
 
@@ -44,5 +39,20 @@ impl From<&mut UnixStream> for Message {
             "Output" => Message::Output(reader.deserialize().next().unwrap().unwrap()),
             _ => panic!("Unknown message type"),
         }
+    }
+}
+
+impl From<Message> for String {
+    fn from(msg: Message) -> Self {
+        let mut buf = vec![];
+        {
+            let mut writer_builder = csv::WriterBuilder::new();
+            writer_builder.has_headers(false);
+            let mut writer = writer_builder.from_writer(&mut buf);
+            writer.serialize(&msg).unwrap();
+        }
+
+        let s = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
+        s
     }
 }
