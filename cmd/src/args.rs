@@ -22,7 +22,8 @@ pub(crate) enum Commands {
     Run(RunCommand),
     Output(OutputCommand),
     // List,
-    // Kill(KillCommand),
+    // Cancel(CancelCommand),
+    // Reorder(ReorderCommand),
 }
 
 #[derive(clap::Args, Clone, Debug)]
@@ -45,7 +46,7 @@ pub(crate) struct OutputCommand {
 }
 
 // #[derive(clap::Args, Clone, Debug)]
-// pub(crate) struct KillCommand {
+// pub(crate) struct CancelCommand {
 //     pub(crate) id: u32,
 // }
 
