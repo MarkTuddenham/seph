@@ -12,6 +12,7 @@ pub enum Message {
     // Status(JobId),
     // Cancel(JobId),
     Output(JobId),
+    Watch(JobId),
 }
 
 impl Message {
@@ -19,6 +20,7 @@ impl Message {
         match self {
             Message::Schedule(_) => false,
             Message::Output(_) => true,
+            Message::Watch(_) => true,
         }
     }
 }
@@ -27,6 +29,8 @@ impl From<&mut UnixStream> for Message {
     fn from(stream: &mut UnixStream) -> Self {
         let mut s = String::new();
         stream.read_to_string(&mut s).unwrap();
+
+        tracing::trace!("Deserialising Message from \"{s}\"");
 
         let (msg_type, internal) = s.split_once(',').unwrap();
 
@@ -37,6 +41,7 @@ impl From<&mut UnixStream> for Message {
         match msg_type {
             "Schedule" => Message::Schedule(reader.deserialize().next().unwrap().unwrap()),
             "Output" => Message::Output(reader.deserialize().next().unwrap().unwrap()),
+            "Watch" => Message::Watch(reader.deserialize().next().unwrap().unwrap()),
             _ => panic!("Unknown message type"),
         }
     }
@@ -53,6 +58,7 @@ impl From<Message> for String {
         }
 
         let s = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
+        tracing::trace!("Serialised Message to \"{s}\"");
         s
     }
 }

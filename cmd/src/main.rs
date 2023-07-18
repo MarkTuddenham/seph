@@ -13,24 +13,26 @@ fn main() -> anyhow::Result<()> {
     let args = parse_args();
 
     match args.command {
-        Commands::Run(run) => {
-            let mut job = Job::new(run.command);
+        Commands::Run(run_args) => {
+            let mut job = Job::new(run_args.command);
 
-            if !run.ignore_run_dir {
+            if !run_args.ignore_run_dir {
                 job = job.with_dir(std::env::current_dir()?);
             }
 
-            // TOOD?: Capture env
+            if run_args.env_capture_all {
+                job = job.with_env_all();
+            }
+
+            // TODO?: Capture env
             send_msg(Message::Schedule(job));
         }
         Commands::Output(job_id) => {
-            send_msg(Message::Output(job_id.id.into()));
-        } // args::Commands::List => {
-          //     println!("List");
-          // }
-          // args::Commands::Kill(kill) => {
-          //     println!("Kill: {:?}", kill);
-          // }
+            send_msg(Message::Output(job_id.id));
+        }
+        Commands::Watch(job_id) => {
+            send_msg(Message::Watch(job_id.id));
+        }
     }
 
     Ok(())
@@ -38,7 +40,7 @@ fn main() -> anyhow::Result<()> {
 
 fn send_msg(msg: Message) {
     if let Message::Schedule(ref job) = msg {
-        println!("{}", *job.id)
+        println!("{}", job.id)
     }
 
     let mut stream = UnixStream::connect(SOCKET_PATH).unwrap();

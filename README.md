@@ -57,7 +57,7 @@ WantedBy=multi-user.target
 
 - [x] Add jobs
 - [x] Get output of jobs
-- [ ] Get streamed output of jobs (eqiv of `tail -f log`)
+- [x] Get streamed output of jobs (eqiv of `tail -f log`)
 - [ ] Cancelling jobs
 - [ ] Listing running/ran jobs
 - [ ] Schedule a job to run multiple times

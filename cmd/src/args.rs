@@ -1,6 +1,7 @@
 //! Command line arguments
 
 use clap::{Parser, Subcommand};
+use libseph::JobId;
 
 // /// When to abort a job with multiple runs
 // #[derive(clap::ValueEnum, Clone, Debug)]
@@ -21,6 +22,7 @@ pub(crate) struct Args {
 pub(crate) enum Commands {
     Run(RunCommand),
     Output(OutputCommand),
+    Watch(WatchCommand),
     // List,
     // Cancel(CancelCommand),
     // Reorder(ReorderCommand),
@@ -37,18 +39,21 @@ pub(crate) struct RunCommand {
     #[clap(short, long)]
     pub(crate) ignore_run_dir: bool,
 
+    #[clap(short, long)]
+    pub(crate) env_capture_all: bool,
+
     pub(crate) command: String,
 }
 
 #[derive(clap::Args, Clone, Debug)]
 pub(crate) struct OutputCommand {
-    pub(crate) id: String,
+    pub(crate) id: JobId,
 }
 
-// #[derive(clap::Args, Clone, Debug)]
-// pub(crate) struct CancelCommand {
-//     pub(crate) id: u32,
-// }
+#[derive(clap::Args, Clone, Debug)]
+pub(crate) struct WatchCommand {
+    pub(crate) id: JobId,
+}
 
 
 pub(crate) fn parse_args() -> Args {
