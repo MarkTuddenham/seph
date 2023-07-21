@@ -7,7 +7,10 @@ use std::time::Duration;
 
 use libseph::{Job, JobId, Message};
 
-use crate::{utils::get_cache_dir, worker::Worker};
+use crate::{
+    utils::{get_cache_dir, read_last_ran_job},
+    worker::Worker,
+};
 
 pub(crate) fn handle_client(worker: Arc<Worker>, mut stream: UnixStream) {
     tracing::debug!("Client connected");
@@ -18,6 +21,7 @@ pub(crate) fn handle_client(worker: Arc<Worker>, mut stream: UnixStream) {
         Message::Schedule(job) => handle_schedule(worker, job),
         Message::Output(job_id) => handle_get_output(&mut stream, job_id),
         Message::Watch(job_id) => handle_watch_output(&mut stream, job_id),
+        Message::GetLastJob() => handle_get_last_job(&mut stream),
     }
 }
 
@@ -25,6 +29,16 @@ fn handle_schedule(worker: Arc<Worker>, job: Job) {
     tracing::debug!("Scheduling job: {}", job);
     worker.add_job(job);
     worker.process_jobs();
+}
+
+fn handle_get_last_job(stream: &mut UnixStream) {
+    tracing::debug!("Getting last job");
+    let job_id = read_last_ran_job();
+    let job_id_str = job_id.map(|id| id.to_string()).unwrap_or_default();
+    let res = stream.write_all(job_id_str.as_bytes());
+    if res.is_err() {
+        tracing::warn!("Client disconnected before all output was sent");
+    }
 }
 
 fn handle_get_output(stream: &mut UnixStream, job_id: JobId) {

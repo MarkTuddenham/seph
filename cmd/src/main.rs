@@ -24,33 +24,43 @@ fn main() -> anyhow::Result<()> {
                 job = job.with_env_all();
             }
 
-            // TODO?: Capture env
+            println!("{}", job.id);
             send_msg(Message::Schedule(job));
         }
-        Commands::Output(job_id) => {
-            send_msg(Message::Output(job_id.id));
-        }
-        Commands::Watch(job_id) => {
-            send_msg(Message::Watch(job_id.id));
+        Commands::Output(args) => {
+            // TODO: if we follow the last one, do we want to follow the next one to?
+            let id = args.id.unwrap_or_else(|| {
+                let stream = send_msg(Message::GetLastJob());
+                read_all_from_stream(stream).into()
+            });
+
+            let mut stream = if args.follow {
+                send_msg(Message::Watch(id))
+            } else {
+                send_msg(Message::Output(id))
+            };
+
+            print_from_stream(&mut stream)
+
         }
     }
 
     Ok(())
 }
 
-fn send_msg(msg: Message) {
-    if let Message::Schedule(ref job) = msg {
-        println!("{}", job.id)
-    }
-
+fn send_msg(msg: Message) -> UnixStream {
     let mut stream = UnixStream::connect(SOCKET_PATH).unwrap();
-    let ser_job: String = msg.clone().into();
+    let ser_job: String = msg.into();
     stream.write_all(ser_job.as_bytes()).unwrap();
     stream.shutdown(std::net::Shutdown::Write).unwrap();
 
-    if msg.expects_reply() {
-        print_from_stream(&mut stream);
-    }
+    stream
+}
+
+fn read_all_from_stream(mut stream: UnixStream) -> String {
+    let mut buf = String::new();
+    stream.read_to_string(&mut buf).unwrap();
+    buf
 }
 
 fn print_from_stream(stream: &mut UnixStream) {

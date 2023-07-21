@@ -22,7 +22,6 @@ pub(crate) struct Args {
 pub(crate) enum Commands {
     Run(RunCommand),
     Output(OutputCommand),
-    Watch(WatchCommand),
     // List,
     // Cancel(CancelCommand),
     // Reorder(ReorderCommand),
@@ -35,7 +34,6 @@ pub(crate) struct RunCommand {
     //
     // #[clap(short, long, value_enum, default_value = "never")]
     // pub(crate) abort: AbortVaraint,
-
     #[clap(short, long)]
     pub(crate) ignore_run_dir: bool,
 
@@ -46,15 +44,20 @@ pub(crate) struct RunCommand {
 }
 
 #[derive(clap::Args, Clone, Debug)]
+#[clap(group(
+    clap::ArgGroup::new("job_id")
+        .required(true)
+        .args(&["id", "last"]),
+))]
 pub(crate) struct OutputCommand {
-    pub(crate) id: JobId,
-}
+    #[clap(short, long)]
+    pub(crate) follow: bool,
 
-#[derive(clap::Args, Clone, Debug)]
-pub(crate) struct WatchCommand {
-    pub(crate) id: JobId,
-}
+    #[clap(short, long, action)]
+    pub(crate) last: bool,
 
+    pub(crate) id: Option<JobId>,
+}
 
 pub(crate) fn parse_args() -> Args {
     Args::parse()

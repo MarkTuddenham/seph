@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-
 use std::fs::File;
 use std::os::unix::fs::PermissionsExt;
 use std::os::unix::net::UnixListener;
@@ -10,7 +9,7 @@ use std::thread::spawn;
 
 use libseph::{Job, SOCKET_PATH};
 
-use crate::{handlers::handle_client, utils::get_cache_dir};
+use crate::{handlers::handle_client, utils::{get_cache_dir, write_last_ran_job}};
 
 pub(crate) struct Worker {
     process_mutex: Mutex<()>,
@@ -70,6 +69,7 @@ impl Worker {
             };
 
             if let Some(job) = job {
+                write_last_ran_job(&job);
                 exec_job(job);
             } else {
                 tracing::debug!("No more jobs to process.");

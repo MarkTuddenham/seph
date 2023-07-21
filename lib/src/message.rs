@@ -2,6 +2,9 @@ use std::{io::Read, os::unix::net::UnixStream};
 
 use crate::job::{Job, JobId};
 
+// TODO: Only allow Messages to be passed over streams, how would this work for an open stream e.g.
+// the watch cmd, send a WatchReplyStart and WatchReplyEnd?
+
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "data")]
 pub enum Message {
@@ -13,26 +16,21 @@ pub enum Message {
     // Cancel(JobId),
     Output(JobId),
     Watch(JobId),
-}
-
-impl Message {
-    pub fn expects_reply(&self) -> bool {
-        match self {
-            Message::Schedule(_) => false,
-            Message::Output(_) => true,
-            Message::Watch(_) => true,
-        }
-    }
+    GetLastJob(),
 }
 
 impl From<&mut UnixStream> for Message {
     fn from(stream: &mut UnixStream) -> Self {
         let mut s = String::new();
         stream.read_to_string(&mut s).unwrap();
+        trim_newline(&mut s);
 
-        tracing::trace!("Deserialising Message from \"{s}\"");
+        tracing::trace!("Deserialising Message from \"{s}\"",);
 
-        let (msg_type, internal) = s.split_once(',').unwrap();
+        let (msg_type, internal) = s.split_once(',').unwrap_or((s.as_str(), ""));
+
+        tracing::trace!("Message type: \"{}\"", msg_type);
+        tracing::trace!("Message internal: \"{}\"", internal);
 
         let mut reader_builder = csv::ReaderBuilder::new();
         reader_builder.has_headers(false);
@@ -42,6 +40,7 @@ impl From<&mut UnixStream> for Message {
             "Schedule" => Message::Schedule(reader.deserialize().next().unwrap().unwrap()),
             "Output" => Message::Output(reader.deserialize().next().unwrap().unwrap()),
             "Watch" => Message::Watch(reader.deserialize().next().unwrap().unwrap()),
+            "GetLastJob" => Message::GetLastJob(),
             _ => panic!("Unknown message type"),
         }
     }
@@ -60,5 +59,14 @@ impl From<Message> for String {
         let s = std::str::from_utf8(buf.as_slice()).unwrap().to_string();
         tracing::trace!("Serialised Message to \"{s}\"");
         s
+    }
+}
+
+fn trim_newline(s: &mut String) {
+    if s.ends_with('\n') {
+        s.pop();
+        if s.ends_with('\r') {
+            s.pop();
+        }
     }
 }
