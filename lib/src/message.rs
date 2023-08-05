@@ -4,6 +4,10 @@ use crate::job::{Job, JobId};
 
 // TODO: Only allow Messages to be passed over streams, how would this work for an open stream e.g.
 // the watch cmd, send a WatchReplyStart and WatchReplyEnd?
+// TODO: watch hogs the connection? Maybe it should start its own separate connection?
+// TODO: make sure the delimiters are escaped in strings and not strings represented by quatations or we should switch to a better serialisation format
+
+const DELIMITER: char = ':';
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
 #[serde(tag = "type", content = "data")]
@@ -27,13 +31,14 @@ impl From<&mut UnixStream> for Message {
 
         tracing::trace!("Deserialising Message from \"{s}\"",);
 
-        let (msg_type, internal) = s.split_once(',').unwrap_or((s.as_str(), ""));
+        let (msg_type, internal) = s.split_once(DELIMITER).unwrap_or((s.as_str(), ""));
 
         tracing::trace!("Message type: \"{}\"", msg_type);
         tracing::trace!("Message internal: \"{}\"", internal);
 
         let mut reader_builder = csv::ReaderBuilder::new();
         reader_builder.has_headers(false);
+        reader_builder.delimiter(DELIMITER as u8);
         let mut reader = reader_builder.from_reader(internal.as_bytes());
 
         match msg_type {
@@ -52,6 +57,7 @@ impl From<Message> for String {
         {
             let mut writer_builder = csv::WriterBuilder::new();
             writer_builder.has_headers(false);
+            writer_builder.delimiter(DELIMITER as u8);
             let mut writer = writer_builder.from_writer(&mut buf);
             writer.serialize(&msg).unwrap();
         }

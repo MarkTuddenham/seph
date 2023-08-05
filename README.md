@@ -15,6 +15,12 @@ seph run "echo \$PWD"
 seph output <job_id>
 ```
 
+## Design
+
+The design is a wrapper around a (not-yet priority) queue.
+A background worker pops a job off the queue when it finished running the current job.
+`seph run` is append.
+
 ## Install from source
 
 ```bash
@@ -53,6 +59,9 @@ ExecStart=/usr/bin/seph-daemon
 WantedBy=multi-user.target
 ```
 
+[WARNING]
+Running the Seph daemon as root allows *any* user to run *any* command as *any* other user, including root.
+
 ## Feature list
 
 - [x] Add jobs
@@ -63,8 +72,9 @@ WantedBy=multi-user.target
 - [ ] Schedule a job to run multiple times
     - [ ] Abort options for the remaining jobs in a muti-run job if one errors
 - [ ] Reordering jobs
-- [ ] Capture user's environment
+- [x] Capture user's environment
 - [ ] Request resources, e.g. number of GPUs
+- [ ] Add priorities to jobs
 
 ## Security
 
