@@ -59,8 +59,8 @@ ExecStart=/usr/bin/seph-daemon
 WantedBy=multi-user.target
 ```
 
-[WARNING]
-Running the Seph daemon as root allows *any* user to run *any* command as *any* other user, including root.
+> [!CAUTION]
+> Running the Seph daemon as root allows *any* user to run *any* command as *any* other user, including root -- without sudo.
 
 ## Feature list
 
